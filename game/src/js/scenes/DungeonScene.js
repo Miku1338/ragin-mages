@@ -58,8 +58,8 @@ export default class DungeonScene extends BaseScene {
         let worldY = event.y + event.camera.scrollY * event.camera.zoom;
         let projectile = (this.localCharacter.fire(worldX, worldY, this.clientId));
         if (projectile) {
-	  this.player_projectiles.add(projectile);
-	}
+          this.player_projectiles.add(projectile);
+        }
       }
     }, this);
 
@@ -71,45 +71,37 @@ export default class DungeonScene extends BaseScene {
   }
 
   playerHit(projectile, character) {
-    console.log("Player hit");
+    console.log(projectile);
     this.player_projectiles.remove(projectile);
     projectile.destroy();
-    this.player_character.remove(character);
-    character.die();
-    // TODO: display stats.
-    new DOMModal(this, 'killed', {
-      acceptButtonSelector: '#respawn',
-      cancelButtonSelector: '.exit',
-      onAccept: (modal) => {
-        modal.close();
-        this.spawn(0, 0);
-      },
-      onCancel: (modal) => {
-        modal.close();
-        this.scene.start('TitleScene');
-      }
-    });
+    if(character.hit(projectile.props.damage)) {
+      this.player_character.remove(character);
+      // TODO: display stats.
+      new DOMModal(this, 'killed', {
+        acceptButtonSelector: '#respawn',
+        cancelButtonSelector: '.exit',
+        onAccept: (modal) => {
+          modal.close();
+          this.spawn(0, 0);
+        },
+        onCancel: (modal) => {
+          modal.close();
+          this.changeToScene('TitleScene');
+        },
+        data: character.stats
+      });
+    }
   }
 
   enemyHit(projectile, character) {
-    console.log("Enemy hit");
     this.enemy_projectiles.remove(projectile);
     projectile.destroy();
-    this.enemy_characters.remove(character);
-    character.die();
-    /*projectile.destroy();
-    character.die();
-    new DOMModal('killed', {
-      acceptButtonSelector: '#respawn',
-      cancelButtonSelector: '.exit',
-      onAccept: (modal) => {
-        modal.close();
-      },
-      onCancel: (modal) => {
-        modal.close();
-        this.scene.start('TitleScene');
-      }
-    });*/
+    this.localCharacter.stats.hitsInflicted++;
+
+    if(character.hit(projectile.props.damage) && this.localCharacter) {
+      this.localCharacter.stats.kills++;
+      this.enemy_characters.remove(character);
+    }
   }
 
   create() {
@@ -124,42 +116,15 @@ export default class DungeonScene extends BaseScene {
     ++this.virtualTime;
     if (this.delay <= 0) {
       const monsterDeterminer = Math.random();
-    let opts;
-    let monsterName;
-    if (monsterDeterminer < 0.25) {
-      opts = {
-        projectileType: 'fire',
-        colliderSize: 70,
-        colliderOffsetX: 95,
-        colliderOffsetY: 60
+      let monsterName = 'spider_monster';
+      if (monsterDeterminer < 0.25) {
+        monsterName = 'fire_monster';
+      } else if (monsterDeterminer < 0.5) {
+        monsterName = 'ice_monster';
+      } else if (monsterDeterminer < 0.75) {
+        monsterName = 'golem_monster';
       }
-      monsterName = 'fire_monster';
-    } else if (monsterDeterminer < 0.5) {
-      opts = {
-        projectileType: 'ice',
-        colliderSize: 70,
-        colliderOffsetX: 88,
-        colliderOffsetY: 60
-      }
-      monsterName = 'ice_monster';
-    } else if (monsterDeterminer < 0.75) {
-      opts = {
-        projectileType: 'rock',
-        colliderSize: 70,
-        colliderOffsetX: 85,
-        colliderOffsetY: 70
-      }
-      monsterName = 'golem_monster';
-    } else {
-      opts = {
-        projectileType: 'ven',
-        colliderSize: 70,
-        colliderOffsetX: 84,
-        colliderOffsetY: 115
-      }
-      monsterName = 'spider_monster';
-    }
-      var newMonster = new Character(this, 450 * (Math.random() - 0.5), 450 * (Math.random() - 0.5), monsterName, opts);
+      var newMonster = new Character(this, 450 * (Math.random() - 0.5), 450 * (Math.random() - 0.5), monsterName);
       newMonster.setAI(this.localCharacter);
       this.enemyList.push(newMonster);
       this.enemy_characters.add(newMonster);

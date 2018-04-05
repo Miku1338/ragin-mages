@@ -8,7 +8,7 @@ export default class Player {
     
     this.reset();
 
-    socket.emit('setId', socket.id);
+    socket.emit('setId', this.id);
 
     socket.on('joinGame', this.joinGame.bind(this));
     socket.on('leaveGame', this.leaveGame.bind(this));
@@ -39,9 +39,10 @@ export default class Player {
     //Create a list of existing connected players
     let existingPlayers = [];
     this.playerManager.getAllPlayersInGame().forEach(value => {
+      console.log(value.handle);
       existingPlayers.push({
         id: value.id,
-        handle: 'value.handle',
+        handle: value.handle,
         character: value.character,
         x: value.position.x,
         y: value.position.y,
@@ -78,6 +79,12 @@ export default class Player {
     this.position.x = posX;
     this.position.y = posY;
     this.socket.to('game').emit('playerFired', this.id, posX, posY, toX, toY);
+  }
+
+  hit(posX, posY, damage, hitBy) {
+    this.position.x = posX;
+    this.position.y = posY;
+    this.socket.to('game').emit('playerHit', this.id, posX, posY, damage, hitBy);
   }
 
   die(posX, posY, killedBy) {
